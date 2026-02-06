@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm add:*)",
+      "Bash(pnpm build:*)",
+      "Bash(npx next build:*)",
+      "Bash(node:*)",
+      "Bash(cmd /c:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git stash:*)",
+      "WebSearch",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(pnpm seed:*)"
+    ]
+  }
+}
