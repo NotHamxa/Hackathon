@@ -63,6 +63,9 @@ export const MAX_POSTS_PER_DAY = 5;
 export const VERIFICATION_CODE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 export const VERIFICATION_MAX_ATTEMPTS = 5;
 
+// ── Community flagging ───────────────────────────────────────
+export const FLAG_THRESHOLD_DELETE = 10;
+
 // ── Pagination ───────────────────────────────────────────────
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;

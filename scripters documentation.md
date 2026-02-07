@@ -1,4 +1,4 @@
-# VeriCampus
+# Unheard
 
 **Anonymous, Decentralized Campus Rumor Verification**
 
@@ -6,9 +6,9 @@
 
 ---
 
-## What Is VeriCampus?
+## What Is Unheard?
 
-VeriCampus is a platform where university students can anonymously share and verify campus rumors and news. There is no central authority deciding what is true — instead, the student community collectively determines the credibility of every post through a novel trust scoring system backed by user credibility tracking.
+Unheard is a platform where university students can anonymously share and verify campus rumors and news. There is no central authority deciding what is true — instead, the student community collectively determines the credibility of every post through a novel trust scoring system backed by user credibility tracking.
 
 The system is designed to solve a fundamental problem: how do you determine truth in an anonymous environment where anyone can say anything, without giving any single person or algorithm the final word?
 
@@ -29,7 +29,7 @@ Existing platforms either require identity (killing anonymity), rely on moderato
 
 ## Our Solution
 
-VeriCampus introduces three interlocking mechanisms that together create a self-regulating truth ecosystem:
+Unheard introduces three interlocking mechanisms that together create a self-regulating truth ecosystem:
 
 ### 1. Anonymous Identity Without Stored Identity
 
@@ -55,7 +55,7 @@ Posts do not exist in isolation. Any user can link an existing post as a relatio
 
 A relation that the community upvotes contributes positively to the post's trust score. A relation that gets downvoted is considered irrelevant or misleading and contributes nothing. This means the crowd curates not just whether a post is true, but whether the evidence linked to it actually matters.
 
-This creates a critical problem: **what happens when a linked post is later deleted?** If a relation was boosting a post's score and the linked post disappears, the score is now inflated by a ghost — a reference that no longer exists. VeriCampus solves this with a **tombstone protocol**. When a post is deleted, all relations pointing to it are severed, and every post that benefited from that link has its trust score immediately recalculated. No ghost data persists.
+This creates a critical problem: **what happens when a linked post is later deleted?** If a relation was boosting a post's score and the linked post disappears, the score is now inflated by a ghost — a reference that no longer exists. Unheard solves this with a **tombstone protocol**. When a post is deleted, all relations pointing to it are severed, and every post that benefited from that link has its trust score immediately recalculated. No ghost data persists.
 
 ---
 
@@ -197,7 +197,7 @@ If a user's credibility drops to 0 or below, they are placed on a 7-day cooldown
 
 When a post is deleted, a naive approach would simply remove the row from the database. But this creates a subtle and dangerous bug: any post that has a relation linking to the deleted post still carries a bonus from a post that no longer exists. The deleted post becomes a "ghost" — invisible but still inflating scores.
 
-VeriCampus solves this with a **tombstone protocol**:
+Unheard solves this with a **tombstone protocol**:
 
 1. The original poster requests deletion (verified via `SHA-256(token) == poster_hash`)
 2. The post's content is cleared and its status is set to "deleted"
@@ -213,7 +213,7 @@ This ensures the trust graph stays clean. Deletion doesn't just hide content —
 
 ## Security & Anti-Gaming
 
-| Threat | How VeriCampus Handles It |
+| Threat | How Unheard Handles It |
 |--------|--------------------------|
 | **Fake accounts** | Only verified .edu emails can register. No email, no token. |
 | **Double voting** | `SHA-256(token + post_id)` produces the same hash every time — duplicates are rejected at the database level. |

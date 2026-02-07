@@ -1,7 +1,7 @@
 /**
- * Seed script — populates MongoDB with demo data for VeriCampus.
+ * Seed script — populates MongoDB with demo data for Unheard.
  *
- * Run:  npx tsx scripts/seed.mts
+ * Run:  pnpm seed
  */
 
 import mongoose from "mongoose";
@@ -22,6 +22,7 @@ function generateToken(): string {
 }
 
 const INITIAL_CREDIBILITY = 10;
+const FLAG_THRESHOLD_DELETE = 10;
 
 // ── Mongoose schemas (duplicated so the script is self-contained) ──
 
@@ -62,6 +63,7 @@ const InteractionSchema = new mongoose.Schema(
     postId: { type: mongoose.Schema.Types.ObjectId, ref: "Post", required: true, index: true },
     userTokenHash: { type: String, required: true, index: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
+    comment: { type: String, maxlength: 500, default: undefined },
     credibilitySnapshot: { type: Number, required: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
@@ -92,27 +94,38 @@ const RelationVoteSchema = new mongoose.Schema(
 );
 const RelationVote = mongoose.models.RelationVote || mongoose.model("RelationVote", RelationVoteSchema);
 
+const FlagSchema = new mongoose.Schema(
+  {
+    flagHash: { type: String, required: true, unique: true },
+    postId: { type: mongoose.Schema.Types.ObjectId, ref: "Post", required: true, index: true },
+    userTokenHash: { type: String, required: true, index: true },
+    reason: { type: String, maxlength: 500, default: undefined },
+  },
+  { timestamps: { createdAt: true, updatedAt: false } },
+);
+const Flag = mongoose.models.Flag || mongoose.model("Flag", FlagSchema);
+
 // ── Demo data ───────────────────────────────────────────────────
 
 const DEMO_EMAILS = [
-  "alex.rivera@stanford.edu",
-  "jordan.chen@mit.edu",
-  "priya.patel@berkeley.edu",
-  "marcus.johnson@harvard.edu",
-  "sofia.martinez@yale.edu",
-  "liam.oconnor@columbia.edu",
-  "aisha.williams@princeton.edu",
-  "noah.kim@upenn.edu",
-  "emma.thompson@cornell.edu",
-  "dev.singh@caltech.edu",
-  "olivia.brown@nyu.edu",
-  "ethan.davis@uchicago.edu",
-  "zara.ahmed@gatech.edu",
-  "tyler.wilson@umich.edu",
-  "maya.jackson@ucla.edu",
-  "ryan.lee@cmu.edu",
-  "chloe.nguyen@duke.edu",
-  "kai.yamamoto@washu.edu",
+  "ahmed.khan@seecs.nust.edu.pk",
+  "fatima.ali@ceme.nust.edu.pk",
+  "usman.raza@nice.nust.edu.pk",
+  "ayesha.malik@smme.nust.edu.pk",
+  "hamza.sheikh@sns.nust.edu.pk",
+  "sana.tariq@scee.nust.edu.pk",
+  "bilal.hassan@nbs.nust.edu.pk",
+  "hira.ahmed@s3h.nust.edu.pk",
+  "zain.amir@seecs.nust.edu.pk",
+  "maham.noor@ceme.nust.edu.pk",
+  "ali.raza@nice.nust.edu.pk",
+  "nimra.saeed@smme.nust.edu.pk",
+  "omer.farooq@sns.nust.edu.pk",
+  "maryam.khan@scee.nust.edu.pk",
+  "saad.iqbal@nbs.nust.edu.pk",
+  "amna.batool@s3h.nust.edu.pk",
+  "asad.mehmood@seecs.nust.edu.pk",
+  "rabia.zulfiqar@ceme.nust.edu.pk",
 ];
 
 interface DemoUser {
@@ -127,188 +140,226 @@ const DEMO_POSTS: {
   titleTemplate: string;
   content: string;
   status: "open" | "verified" | "false" | "disputed";
-  ratingBias: number; // center of rating distribution (1-5)
+  ratingBias: number;
 }[] = [
   // ── Verified rumors ──
   {
-    titleTemplate: "Library closing 2 hours early on Fridays starting next month",
+    titleTemplate: "SEECS GPU workstations getting RTX 5090s next semester",
     content:
-      "I overheard two librarians talking about new Friday hours. Apparently budget cuts are forcing them to close at 6 PM instead of 8 PM starting February 21st. This affects the main library and the science library. Has anyone else heard about this?",
+      "A lab instructor in SEECS told us during the AI lab that the department has ordered RTX 5090 GPUs for all workstations in the deep learning lab. They apparently got funding from HEC for this. Should arrive before Fall 2026. Currently we're stuck with 3060s that can barely train a ResNet. This would be massive for FYP students working on computer vision and NLP.",
     status: "verified",
     ratingBias: 4.5,
   },
   {
-    titleTemplate: "New dining hall opening in the old student union building",
+    titleTemplate: "Cafeteria C2 shutting down for renovation until March",
     content:
-      "Construction crew has been working on the east wing of the old student union for weeks now. A friend who works in facilities confirmed it's going to be a new dining hall with international food stations. Expected to open mid-March. The menu is supposed to include halal, kosher, and vegan options.",
+      "C2 cafeteria (the one near CEME) has a notice up saying it's closing for renovation starting next week. A worker there said they're expanding the seating area and adding a new BBQ section. Expected to reopen in mid-March. Meanwhile everyone from CEME/SMME side will have to walk to C1 or the SEECS dhaba.",
     status: "verified",
     ratingBias: 4.3,
   },
   {
-    titleTemplate: "CS department adding a new AI/ML concentration next fall",
+    titleTemplate: "Shuttle timings changing — last bus at 6 PM instead of 8 PM",
     content:
-      "Professor Williams mentioned in lecture today that the CS department got approval for a new AI/ML concentration. It'll require Linear Algebra, Probability, and three new electives they're developing. Registration should be available for Fall 2026. This is huge for anyone interested in machine learning.",
+      "The transport office put up a notice (saw it on the board near gate 1) that the last shuttle from H-12 campus will now leave at 6 PM instead of 8 PM. Effective from next Monday. This is going to be a disaster for evening lab students. Apparently it's a cost-cutting measure. The Islamabad route and Rawalpindi route are both affected.",
     status: "verified",
     ratingBias: 4.6,
   },
   {
-    titleTemplate: "Campus WiFi upgrade happening over spring break",
+    titleTemplate: "Free WiFi upgrade across hostels — WiFi 6 access points",
     content:
-      "IT department sent an internal memo (leaked by a work-study student) about a full WiFi overhaul during spring break. They're replacing all access points in dorms and academic buildings with WiFi 7 equipment. Speed should jump from 500 Mbps to 2+ Gbps. The dead zones in the engineering building basement should finally be fixed.",
+      "IT department confirmed during a meeting with hostel wardens that they're upgrading all hostel WiFi to WiFi 6. The work starts over the winter break. Hostels 1-8 on boys side and girls hostels will all get new access points. The speed should actually work now, especially in the older hostels where you can barely load a webpage after 10 PM.",
     status: "verified",
     ratingBias: 4.4,
   },
   // ── False rumors ──
   {
-    titleTemplate: "University president reportedly resigning end of semester",
+    titleTemplate: "NUST switching to semester GPA-only system — no CGPA",
     content:
-      "Heard from someone in the admin building that President Morrison is stepping down at the end of this semester. Supposedly there's a disagreement with the board about the new campus expansion project. No official statement yet but my source is usually reliable.",
+      "Heard from a student in the registrar's office that NUST is planning to switch to a semester-GPA-only system where your transcript won't show a cumulative GPA. Apparently some international universities follow this model. They say the academic council already approved it for Fall 2026. If true this would completely change how grading pressure works here.",
     status: "false",
     ratingBias: 1.8,
   },
   {
-    titleTemplate: "Tuition increasing 15% next academic year",
+    titleTemplate: "H-12 campus being merged with H-11 campus next year",
     content:
-      "A student senator leaked that the board of trustees is voting on a 15% tuition increase for the 2026-2027 year. This would be the largest increase in the university's history. Supposedly it's to fund the new research center but students are furious.",
+      "A friend in admin said NUST is planning to merge the H-12 and H-11 campuses into one. The H-11 campus would handle all undergrad programs and H-12 would become a dedicated research/postgrad campus. This would mean massive changes for hostels and transport. No official announcement yet but supposedly the VC has already signed off on it.",
     status: "false",
     ratingBias: 1.5,
   },
   {
-    titleTemplate: "Campus police getting tasers and body cameras by March",
+    titleTemplate: "SEECS adding mandatory military fitness test for graduation",
     content:
-      "My roommate's cousin works in campus safety and says officers are being trained to carry tasers starting in March. They're also getting body cameras. This is a huge policy shift from the current unarmed approach. Student government apparently wasn't consulted.",
+      "Someone in our batch WhatsApp group shared a circular saying SEECS is introducing a mandatory physical fitness test as a graduation requirement. Running, pushups, the works. Because NUST is technically under the army. They say it starts next semester. Several profs apparently opposed it but it got pushed through. Can anyone confirm?",
     status: "false",
     ratingBias: 1.7,
   },
   // ── Disputed rumors ──
   {
-    titleTemplate: "Professor caught using AI to grade final essays",
+    titleTemplate: "Prof using ChatGPT to grade CS 210 assignments",
     content:
-      "Multiple students in ENG 201 noticed their essay feedback contained identical phrasing and some comments referenced points they never made. Looks like Professor Harrison might be using ChatGPT to grade papers. At least 5 students have compared their feedback and found suspicious similarities. The department hasn't responded yet.",
+      "Multiple students in CS 210 (Data Structures) compared their assignment feedback and found almost identical comments across different submissions. One feedback comment referenced a function that didn't exist in the student's code. At least 8 students have reported similar findings. Looks like the prof or TA is running submissions through ChatGPT for grading. The HOD hasn't responded to the email complaint yet.",
     status: "disputed",
     ratingBias: 3.0,
   },
   {
-    titleTemplate: "Secret underground tunnels connecting campus buildings",
+    titleTemplate: "Underground tunnels connecting SEECS, SMME, and the old library",
     content:
-      "Was exploring the basement of the physics building after hours and found a locked door with 'AUTHORIZED PERSONNEL ONLY' that I've never seen before. A maintenance worker told me there's a tunnel system connecting the physics, chemistry, and engineering buildings. Built during the Cold War apparently. Has anyone else found entrances?",
+      "Was in the SEECS basement helping a lab instructor move equipment and noticed a locked steel door I'd never seen before. The instructor said there's a tunnel system connecting SEECS to SMME and the old library building. Built when the campus was originally constructed. Apparently maintenance staff use it sometimes. Has anyone else seen this? The door had a heavy padlock on it.",
     status: "disputed",
     ratingBias: 3.2,
   },
   {
-    titleTemplate: "Greek life getting banned after incident at Sigma house",
+    titleTemplate: "Hostel ragging incident covered up by administration",
     content:
-      "After last weekend's incident at the Sigma Chi house (ambulance was called around 2 AM), I'm hearing the administration is seriously considering suspending all Greek life activities for the rest of the semester. The Dean of Students office has been in meetings all week. Some say it's just Sigma Chi, others say it's all fraternities.",
+      "Three freshmen in Hostel 5 were allegedly subjected to severe ragging last week. One needed medical attention at the campus clinic. The administration supposedly handled it internally without filing an FIR or issuing any public notice. The seniors involved are allegedly still in the hostel. Multiple witnesses but nobody wants to go on record because they fear retaliation.",
     status: "disputed",
     ratingBias: 2.8,
   },
   // ── Open (recent) rumors ──
   {
-    titleTemplate: "Free Patagonia jackets for all RAs next semester?",
+    titleTemplate: "NUST Olympiad prize money doubled to 2 lakh per event",
     content:
-      "Residence Life apparently got a sponsorship deal with Patagonia. Every RA is supposedly getting a free fleece jacket with the university logo. Sounds too good to be true but two different RAs in my building mentioned it independently. Anyone in ResLife able to confirm?",
+      "Organizing committee member for NUST Olympiad told me the prize money for all competitions is being doubled this year. First place in coding, robotics, and business competitions will get 2 lakh each instead of 1 lakh. Apparently they got a big sponsor from a telecom company. Registration opens next week. If true this would be the biggest Olympiad yet.",
     status: "open",
     ratingBias: 3.5,
   },
   {
-    titleTemplate: "Someone's been living in the library basement",
+    titleTemplate: "Someone's been sleeping in the SEECS building after hours",
     content:
-      "Night security found a sleeping bag, a hot plate, and personal belongings in a storage room in the library basement. Apparently someone has been sleeping there for weeks. Library staff are being tight-lipped but a custodian confirmed they found the setup last Tuesday. Security is reviewing camera footage.",
+      "Night security found a sleeping bag, snacks, and a laptop charger in the unused room behind Lab 7 in SEECS. Apparently someone has been staying there for at least two weeks. The room is supposed to be locked but the lock was broken. Security is checking camera footage. A janitor said they've been finding food wrappers there for a while. No idea if it's a student or someone from outside.",
     status: "open",
     ratingBias: 3.8,
   },
   {
-    titleTemplate: "Dining hall food supplier linked to health code violations",
+    titleTemplate: "Mess food supplier failed health inspection — cockroaches found",
     content:
-      "Our main food supplier, AraGourmet Services, just had 3 facilities in the state cited for health code violations according to public records I found online. Violations include improper food storage temperatures and pest issues. The university contract is up for renewal this spring. Should we be worried about our dining hall food?",
+      "The mess food supplier (the one that handles hostels 3-6) apparently failed a surprise health inspection last week. A student who was there when the inspectors came says they found cockroaches in the storage area and expired spices. The mess committee is supposed to address this but nothing has been communicated to students. We deserve to know what we're eating.",
     status: "open",
     ratingBias: 3.4,
   },
   {
-    titleTemplate: "New parking garage construction starting this summer",
+    titleTemplate: "New parking area being built — east ground near SMME gone",
     content:
-      "Saw surveyors marking up the east parking lot near the gym yesterday. Overheard them mentioning a 4-story parking garage project. If true, where are commuter students supposed to park during construction? The east lot has 400 spaces. No announcement from admin yet.",
+      "Surveyors were marking up the east ground near SMME yesterday. Apparently they're building a new multi-level parking structure. If true, the cricket ground we use for evening matches will be gone. Commuter students need parking but so do we need that ground. No announcement from admin. Has anyone heard anything official?",
     status: "open",
     ratingBias: 3.6,
   },
   {
-    titleTemplate: "Star basketball player seen in walking boot at health center",
+    titleTemplate: "Star cricketer from NUST team has stress fracture — out of intervarsity",
     content:
-      "Jaylen Morris, our starting point guard, was spotted in a walking boot at the campus health center this morning. The conference tournament is in 3 weeks. No update from the athletics department. He wasn't at practice yesterday either according to someone on the team. This could be devastating for our tournament run.",
+      "Zain Abbas, our opening batsman, was spotted at the campus medical center with his arm in a sling. The intervarsity tournament is in three weeks. He was the top scorer last year. The sports department hasn't said anything. A teammate said it's a stress fracture and he's out for at least 6 weeks. This would seriously hurt our chances.",
     status: "open",
     ratingBias: 3.3,
   },
   {
-    titleTemplate: "Psychology department experiment gone wrong — participants hospitalized?",
+    titleTemplate: "Sleep deprivation study at SNS went wrong — participant hospitalized?",
     content:
-      "A friend who works as a research assistant in the psych department said a study involving sleep deprivation had two participants who needed medical attention. The study was supposedly approved by the IRB but the protocol may have been violated. The PI has been asked to suspend the study while it's being reviewed.",
+      "A friend doing RA work at SNS (School of Natural Sciences) mentioned a sleep deprivation study had a participant who fainted during the experiment and was taken to PIMS. The study was approved by the ethics board but apparently the protocol wasn't followed properly. The PI has suspended the study. If this is true, there should be an investigation.",
     status: "open",
     ratingBias: 2.9,
   },
   {
-    titleTemplate: "Campus bookstore being replaced by Amazon pickup center",
+    titleTemplate: "NUST bookshop closing — being replaced by an online-only system",
     content:
-      "The campus bookstore has been slowly reducing inventory for months. Now I'm hearing it's going to be converted into an Amazon Hub pickup center and a smaller textbook-only shop. The current bookstore employees are apparently being offered severance. The student paper is supposedly working on a story about this.",
+      "The campus bookshop near the library has been reducing inventory for months. A staff member said they're shutting down and all textbook orders will move to an online portal. Current employees are supposedly being offered transfers to admin roles. The bookshop has been here since forever. Where will freshmen get their lab manuals last-minute?",
     status: "open",
     ratingBias: 3.1,
   },
   {
-    titleTemplate: "Spotted: Film crew setting up in the quad for a Netflix production",
+    titleTemplate: "Film crew spotted on campus — drama serial being shot at NUST",
     content:
-      "There are production trucks and lighting equipment being set up around the main quad right now. Someone talked to a crew member who said they're scouting/filming for a Netflix series set at a fictional university. Anyone know what show this could be? They had permits from the city.",
+      "There are production vans and lighting equipment near the main gate and the iconic NUST entrance road. Someone talked to a crew member and they said they're shooting scenes for a new drama serial set at a fictional university. The admin gave permission apparently. Anyone know which channel? They were filming near the fountains area too.",
     status: "open",
     ratingBias: 4.0,
   },
   {
-    titleTemplate: "Chemistry lab explosion was covered up by administration",
+    titleTemplate: "Lab explosion in SCEE was covered up — no safety alert sent",
     content:
-      "Three weeks ago there was a small chemical fire in Chem 302's lab section. Two students got minor burns. I was there. But the university never sent a safety alert or acknowledged it publicly. A facilities worker told me the lab was quietly repaired over the weekend. Where's the transparency?",
+      "Two weeks ago there was a small chemical fire in an SCEE lab during a practical. Two students got minor burns. I was in the adjacent lab and heard the commotion. But NUST never sent a safety alert email or acknowledged it publicly. The lab was quietly repaired over the weekend. Where's the transparency? Students have a right to know about safety incidents.",
     status: "open",
     ratingBias: 3.5,
   },
   {
-    titleTemplate: "IT department can read all your campus email without a warrant",
+    titleTemplate: "IT department can read all your NUST email without telling you",
     content:
-      "Read through the campus IT acceptable use policy and found a clause that says the university reserves the right to access any data on university systems 'for legitimate business purposes' without notifying the user. This includes email, cloud storage, and browsing history on campus WiFi. Did anyone else know about this?",
+      "Read through the NUST IT acceptable use policy on the portal. There's a clause saying the university reserves the right to access any data on university systems for 'legitimate purposes' without notifying the user. This includes NUST email, LMS data, and browsing history on campus WiFi. Did anyone else know about this? Seems like a privacy issue.",
     status: "open",
     ratingBias: 3.7,
   },
   {
-    titleTemplate: "Famous alumni donating $50M for new arts center",
+    titleTemplate: "NUST alumni donating $2M for new AI research center",
     content:
-      "A well-connected faculty member told me that a famous alumni (class of '98, now a tech CEO) is about to announce a $50 million donation for a state-of-the-art performing arts center. The announcement is supposedly planned for Founders' Day in April. This would be the largest single donation in university history.",
+      "A well-connected faculty member in SEECS told our class that a NUST BSCS alumnus from the 2005 batch who's now a VP at a FAANG company is about to donate $2 million for a new AI research center on campus. The announcement is supposedly planned for the Founder's Day ceremony. This would be one of the largest individual donations to NUST.",
     status: "open",
     ratingBias: 3.9,
   },
   {
-    titleTemplate: "Squirrels on campus are getting aggressive — multiple students bitten",
+    titleTemplate: "Stray cats on campus are getting aggressive — student scratched near library",
     content:
-      "This is the third time this week I've seen a squirrel charge at someone near the oak grove. My friend actually got bitten on Tuesday and had to get a tetanus shot at the health center. The squirrels near the science building are especially bold. They're literally snatching food out of people's hands. Is the university going to do anything?",
+      "This is the third incident I've heard about this month. A girl got scratched by a stray cat near the library entrance yesterday and had to get a tetanus shot at the medical center. The cats near the C1 cafeteria are especially aggressive during lunch hours. They jump on tables and snatch food. The campus has way too many strays now. Is anyone going to do something?",
     status: "open",
     ratingBias: 4.1,
   },
   {
-    titleTemplate: "Janitor found hidden room behind wall in old history building",
+    titleTemplate: "Hidden room discovered during renovation in the old SNS building",
     content:
-      "A maintenance worker doing renovations in the history building (built 1923) broke through a wall and found a sealed-off room with old furniture, books from the 1940s, and what appears to be a prohibition-era bar setup. The room isn't on any building blueprints. Facilities took photos before sealing it back up. Anyone seen the pictures?",
+      "Workers doing renovation in the old SNS building broke through a wall and found a sealed-off room with old lab equipment, notebooks from the 90s, and what looks like an old darkroom setup. The room wasn't on any current blueprints. Facilities took photos before sealing it back up. A janitor who's been at NUST for 20+ years said he'd never seen it. Anyone know the history?",
     status: "open",
     ratingBias: 4.2,
   },
   {
-    titleTemplate: "Meal plan prices going up but portions getting smaller",
+    titleTemplate: "Mess portions getting smaller but fees went up 15%",
     content:
-      "Has anyone else noticed the portions at the main dining hall have gotten noticeably smaller this semester? The chicken breast used to be a full breast, now it's clearly half. Rice portions are smaller too. But the unlimited meal plan went up $200 this year. I weighed my plate — it's about 30% less food than last semester.",
+      "Has anyone else noticed the mess portions have gotten noticeably smaller this semester? The chicken used to be a full piece, now it's clearly a half portion. Roti count went from 4 to 3 in the standard plate. But the mess fee went up from 8500 to 9800 this semester. I've been comparing with last semester's photos. It's not just me — my whole hostel floor has noticed.",
     status: "open",
     ratingBias: 3.6,
   },
   {
-    titleTemplate: "Campus ghost sighting in Thompson Hall caught on security camera",
+    titleTemplate: "Ghost sighting in the old admin building caught on security camera",
     content:
-      "A friend who works campus security showed me footage from Thompson Hall (the oldest building on campus) from last Friday at 3 AM. There's a weird white figure that moves across the hallway and through a wall. Could be a glitch but it's pretty creepy. Thompson Hall has had ghost stories since the 1950s. The video is apparently making rounds among security staff.",
+      "A friend who works as a night security guard showed me footage from the old admin building from last Friday at 3 AM. There's a weird white figure that appears in the corridor and moves through a wall. Could be a camera glitch but it's really creepy. The old admin building has had ghost stories since the 2000s. The video is making rounds among security staff apparently.",
     status: "open",
     ratingBias: 2.5,
   },
 ];
+
+// ── Comment templates per rating level ──
+
+const COMMENT_TEMPLATES: Record<number, string[]> = {
+  1: [
+    "This is completely made up. I checked with admin myself.",
+    "Fake news. The official notice board says nothing about this.",
+    "My friend works there and confirmed this is false.",
+    "Stop spreading misinformation. This never happened.",
+    "I was literally there. None of this is true.",
+  ],
+  2: [
+    "Seems exaggerated. The original situation was different.",
+    "I doubt this. The details don't add up.",
+    "Probably taken out of context. The reality is more nuanced.",
+    "Heard a different version of this story that contradicts key details.",
+  ],
+  3: [
+    "Hard to say. I've heard conflicting accounts.",
+    "Could go either way. Waiting for more info.",
+    "Some parts might be true but the rest is speculation.",
+    "No idea honestly. Let's see if someone can verify.",
+    "Interesting if true. But I'm not convinced yet.",
+  ],
+  4: [
+    "Seems legit. A batchmate mentioned something similar.",
+    "I've seen some evidence pointing in this direction.",
+    "Probably true based on what I've heard from others.",
+    "This matches what I observed last week.",
+  ],
+  5: [
+    "100% true. I was there when it happened.",
+    "Can confirm. Saw it with my own eyes.",
+    "My friend who works there verified this personally.",
+    "This is accurate. Multiple people have confirmed it.",
+    "Definitely true. I have screenshots to prove it.",
+  ],
+};
 
 // ── Seed logic ──────────────────────────────────────────────────
 
@@ -325,6 +376,7 @@ async function seed() {
     Interaction.deleteMany({}),
     Relation.deleteMany({}),
     RelationVote.deleteMany({}),
+    Flag.deleteMany({}),
   ]);
 
   // ── 1. Create users ──
@@ -334,15 +386,14 @@ async function seed() {
     const token = generateToken();
     const tokenHash = await sha256(token);
     const emailHash = await sha256(email.toLowerCase().trim());
-    // Vary credibility: most users have 8-15, a few higher (veterans), one low
     const credibility =
       users.length === 0
-        ? 22 // first user is a veteran
+        ? 22
         : users.length === 1
           ? 18
           : users.length === DEMO_EMAILS.length - 1
-            ? 3 // last user has low credibility
-            : Math.floor(Math.random() * 8) + 8; // 8-15
+            ? 3
+            : Math.floor(Math.random() * 8) + 8;
     users.push({ email, token, tokenHash, emailHash, credibility });
   }
 
@@ -365,16 +416,12 @@ async function seed() {
     const p = DEMO_POSTS[i];
     const poster = users[i % users.length];
 
-    // Stagger creation dates: evaluated posts are older, open posts are recent
     let createdAt: Date;
     if (p.status === "verified" || p.status === "false") {
-      // 3-5 weeks ago (old enough to be evaluated)
       createdAt = new Date(now - (21 + Math.random() * 14) * 24 * 60 * 60 * 1000);
     } else if (p.status === "disputed") {
-      // 2-4 weeks ago
       createdAt = new Date(now - (14 + Math.random() * 14) * 24 * 60 * 60 * 1000);
     } else {
-      // Open: 0-13 days ago
       createdAt = new Date(now - Math.random() * 13 * 24 * 60 * 60 * 1000);
     }
 
@@ -384,7 +431,7 @@ async function seed() {
       media: [],
       status: p.status,
       posterTokenHash: poster.tokenHash,
-      trustScore: 0, // will be computed after interactions
+      trustScore: 0,
       interactionCount: 0,
       evaluatedAt: p.status !== "open" ? new Date(createdAt.getTime() + 15 * 24 * 60 * 60 * 1000) : null,
       createdAt,
@@ -395,14 +442,16 @@ async function seed() {
   const posts = await Post.insertMany(postDocs);
   console.log(`  Created ${posts.length} posts`);
 
-  // ── 3. Create interactions (ratings) ──
+  // ── 3. Create interactions (ratings) + ~30% with comments ──
   console.log("Creating interactions …");
   let interactionCount = 0;
+  let commentCount = 0;
   const interactionBulk: {
     interactionHash: string;
     postId: mongoose.Types.ObjectId;
     userTokenHash: string;
     rating: number;
+    comment?: string;
     credibilitySnapshot: number;
     createdAt: Date;
   }[] = [];
@@ -412,23 +461,18 @@ async function seed() {
     const template = DEMO_POSTS[pi];
     const postPoster = users[pi % users.length];
 
-    // Decide how many ratings this post gets
     let raterCount: number;
     if (template.status !== "open") {
-      // Evaluated posts need many interactions
       raterCount = Math.min(users.length - 1, 12 + Math.floor(Math.random() * 5));
     } else {
-      // Open posts: 3-14 ratings
       raterCount = 3 + Math.floor(Math.random() * 12);
     }
 
-    // Pick random raters (excluding poster)
     const availableRaters = users.filter((u) => u.tokenHash !== postPoster.tokenHash);
     const shuffled = availableRaters.sort(() => Math.random() - 0.5);
     const raters = shuffled.slice(0, raterCount);
 
     for (const rater of raters) {
-      // Generate rating biased toward the template's bias
       const bias = template.ratingBias;
       let rating = Math.round(bias + (Math.random() - 0.5) * 2);
       rating = Math.max(1, Math.min(5, rating));
@@ -438,11 +482,20 @@ async function seed() {
         post.createdAt.getTime() + Math.random() * (now - post.createdAt.getTime()),
       );
 
+      // ~30% of interactions have comments
+      let comment: string | undefined;
+      if (Math.random() < 0.3) {
+        const templates = COMMENT_TEMPLATES[rating];
+        comment = templates[Math.floor(Math.random() * templates.length)];
+        commentCount++;
+      }
+
       interactionBulk.push({
         interactionHash: hash,
         postId: post._id as mongoose.Types.ObjectId,
         userTokenHash: rater.tokenHash,
         rating,
+        ...(comment ? { comment } : {}),
         credibilitySnapshot: rater.credibility,
         createdAt: ratingDate,
       });
@@ -451,7 +504,7 @@ async function seed() {
   }
 
   await Interaction.insertMany(interactionBulk);
-  console.log(`  Created ${interactionCount} interactions`);
+  console.log(`  Created ${interactionCount} interactions (${commentCount} with comments)`);
 
   // ── 4. Compute trust scores ──
   console.log("Computing trust scores …");
@@ -461,7 +514,6 @@ async function seed() {
       (i) => i.postId.toString() === post._id.toString(),
     );
 
-    // Weighted average: weight = log2(1 + credibilitySnapshot)
     let weightedSum = 0;
     let totalWeight = 0;
     for (const ix of interactions) {
@@ -485,30 +537,30 @@ async function seed() {
   // ── 5. Create relations (evidence links) ──
   console.log("Creating relations …");
   const relationPairs: [number, number][] = [
-    // Library closing + meal plan prices (budget theme)
-    [0, 23],
-    // CS concentration + WiFi upgrade (tech improvements)
-    [2, 3],
-    // Tuition increase + meal plan portions
-    [5, 23],
-    // Greek life + psych experiment (student safety)
+    // Shuttle timings + cafeteria closing (campus logistics)
+    [2, 1],
+    // GPU workstations + WiFi upgrade (tech improvements)
+    [0, 3],
+    // GPA system change + mess fees (policy changes)
+    [4, 23],
+    // Ragging incident + sleep study (student safety)
     [9, 15],
-    // Bookstore + Amazon (campus changes)
+    // Bookshop closing + parking area (campus changes)
     [16, 13],
-    // Professor AI grading + IT email policy (tech oversight)
+    // Prof AI grading + IT email policy (tech oversight)
     [7, 19],
-    // Basketball player + film crew (campus buzz)
+    // Cricket player + film crew (campus buzz)
     [14, 17],
     // Hidden room + ghost sighting (campus mysteries)
-    [21, 24],
-    // Secret tunnels + hidden room
-    [8, 21],
-    // Dining hall food supplier + meal portions
+    [22, 24],
+    // Underground tunnels + hidden room
+    [8, 22],
+    // Mess food supplier + mess portions
     [12, 23],
-    // Chemistry lab + psych experiment (safety)
+    // Lab explosion + sleep study (safety)
     [18, 15],
-    // Famous alumni donation + new dining hall
-    [20, 1],
+    // Alumni donation + GPU workstations
+    [20, 0],
   ];
 
   const relationDocs = [];
@@ -539,7 +591,6 @@ async function seed() {
   }[] = [];
 
   for (const rel of relations) {
-    // 3-8 voters per relation
     const voterCount = 3 + Math.floor(Math.random() * 6);
     const shuffledVoters = [...users].sort(() => Math.random() - 0.5).slice(0, voterCount);
 
@@ -558,19 +609,69 @@ async function seed() {
   await RelationVote.insertMany(voteBulk);
   console.log(`  Created ${voteCount} relation votes`);
 
+  // ── 7. Create flags on 4-5 posts ──
+  console.log("Creating flags …");
+  const flagTargets = [
+    { postIdx: 9, flagCount: 6 },   // Ragging incident — controversial
+    { postIdx: 12, flagCount: 4 },   // Mess food supplier — inflammatory
+    { postIdx: 15, flagCount: 3 },   // Sleep study — sensitive
+    { postIdx: 18, flagCount: 5 },   // Lab explosion cover-up — accusatory
+    { postIdx: 24, flagCount: 2 },   // Ghost sighting — spam-ish
+  ];
+
+  let totalFlags = 0;
+  const flagBulk: {
+    flagHash: string;
+    postId: mongoose.Types.ObjectId;
+    userTokenHash: string;
+    reason?: string;
+  }[] = [];
+
+  const flagReasons = [
+    "Spreading unverified accusations",
+    "Could cause unnecessary panic",
+    "This is defamatory",
+    "Spam / not a real campus rumor",
+    "Potentially harmful content",
+    "Violates privacy of individuals mentioned",
+  ];
+
+  for (const target of flagTargets) {
+    const postId = posts[target.postIdx]._id as mongoose.Types.ObjectId;
+    const shuffledUsers = [...users].sort(() => Math.random() - 0.5).slice(0, target.flagCount);
+
+    for (const user of shuffledUsers) {
+      const hash = await sha256("flag:" + user.token + postId.toString());
+      const reason = Math.random() < 0.6
+        ? flagReasons[Math.floor(Math.random() * flagReasons.length)]
+        : undefined;
+
+      flagBulk.push({
+        flagHash: hash,
+        postId,
+        userTokenHash: user.tokenHash,
+        ...(reason ? { reason } : {}),
+      });
+      totalFlags++;
+    }
+  }
+
+  await Flag.insertMany(flagBulk);
+  console.log(`  Created ${totalFlags} flags on ${flagTargets.length} posts`);
+
   // ── Done ──
   console.log("\n--- Seed complete ---");
   console.log(`  Users:        ${users.length}`);
   console.log(`  Posts:         ${posts.length}`);
-  console.log(`  Interactions:  ${interactionCount}`);
+  console.log(`  Interactions:  ${interactionCount} (${commentCount} with comments)`);
   console.log(`  Relations:     ${relations.length}`);
   console.log(`  Votes:         ${voteCount}`);
+  console.log(`  Flags:         ${totalFlags}`);
 
-  // Print a token the user can log in with
   console.log("\n--- Demo login tokens ---");
   console.log("Copy any token below and use it to log in:\n");
   for (const u of users.slice(0, 5)) {
-    console.log(`  ${u.email.padEnd(35)} → ${u.token}`);
+    console.log(`  ${u.email.padEnd(40)} → ${u.token}`);
   }
   console.log(`  ... and ${users.length - 5} more users`);
 

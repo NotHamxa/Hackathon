@@ -5,6 +5,7 @@ export interface IInteraction extends Document {
   postId: mongoose.Types.ObjectId;
   userTokenHash: string;
   rating: number;
+  comment?: string;
   credibilitySnapshot: number;
   createdAt: Date;
 }
@@ -15,6 +16,7 @@ const InteractionSchema = new Schema<IInteraction>(
     postId: { type: Schema.Types.ObjectId, ref: "Post", required: true, index: true },
     userTokenHash: { type: String, required: true, index: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
+    comment: { type: String, maxlength: 500, default: undefined },
     credibilitySnapshot: { type: Number, required: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } }

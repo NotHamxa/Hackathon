@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Users, TrendingUp, Lock } from "lucide-react";
+import { Ear, Users, TrendingUp, Lock } from "lucide-react";
 import Link from "next/link";
 
 export default function LandingPage() {
@@ -20,8 +20,8 @@ export default function LandingPage() {
       <header className="border-b">
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-2 font-semibold">
-            <ShieldCheck className="size-5 text-primary" />
-            <span>VeriCampus</span>
+            <Ear className="size-5 text-primary" />
+            <span>Unheard</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
@@ -50,7 +50,7 @@ export default function LandingPage() {
 
           <div className="flex justify-center gap-3">
             <Button size="lg" asChild>
-              <Link href="/register">Join VeriCampus</Link>
+              <Link href="/register">Join Unheard</Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
               <Link href="/feed">Browse Feed</Link>

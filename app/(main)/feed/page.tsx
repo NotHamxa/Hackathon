@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useApi } from "@/hooks/use-api";
 import { PostCard } from "@/components/posts/post-card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -23,12 +25,15 @@ interface Pagination {
 }
 
 export default function FeedPage() {
+  const { isAuthenticated } = useAuth();
+  const { apiFetch } = useApi();
   const [posts, setPosts] = useState<Post[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("");
   const [sort, setSort] = useState<string>("recent");
   const [page, setPage] = useState(1);
+  const [myInteractions, setMyInteractions] = useState<Record<string, number>>({});
 
   async function fetchPosts() {
     setLoading(true);
@@ -38,8 +43,22 @@ export default function FeedPage() {
 
       const res = await fetch(`/api/posts?${params}`);
       const data = await res.json();
-      setPosts(data.posts || []);
+      const fetchedPosts: Post[] = data.posts || [];
+      setPosts(fetchedPosts);
       setPagination(data.pagination || null);
+
+      // Fetch user's interactions for these posts
+      if (isAuthenticated && fetchedPosts.length > 0) {
+        const ids = fetchedPosts.map((p) => p._id).join(",");
+        try {
+          const ixData = await apiFetch(`/api/posts/my-interactions?postIds=${ids}`);
+          setMyInteractions(ixData.interactions || {});
+        } catch {
+          setMyInteractions({});
+        }
+      } else {
+        setMyInteractions({});
+      }
     } catch {
       // Silently fail
     } finally {
@@ -50,7 +69,7 @@ export default function FeedPage() {
   useEffect(() => {
     fetchPosts();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, status, sort]);
+  }, [page, status, sort, isAuthenticated]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,7 +119,11 @@ export default function FeedPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {posts.map((post) => (
-            <PostCard key={post._id} post={post} />
+            <PostCard
+              key={post._id}
+              post={post}
+              myRating={myInteractions[post._id] || null}
+            />
           ))}
         </div>
       )}
