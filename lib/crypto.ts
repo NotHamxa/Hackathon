@@ -33,6 +33,11 @@ export async function relationVoteHash(token: string, relationId: string): Promi
   return sha256(token + relationId);
 }
 
+/** SHA-256("flag:" + token + postId) — one flag per user per post */
+export async function flagHash(token: string, postId: string): Promise<string> {
+  return sha256("flag:" + token + postId);
+}
+
 /** SHA-256(token + YYYY-MM-DD) — daily rate-limit bucket */
 export async function dailyRateLimitHash(token: string): Promise<string> {
   const today = new Date().toISOString().slice(0, 10);

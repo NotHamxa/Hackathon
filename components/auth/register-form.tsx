@@ -41,7 +41,7 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Join VeriCampus</CardTitle>
+        <CardTitle>Join Unheard</CardTitle>
         <CardDescription>
           Enter your university .edu email to get started.
         </CardDescription>

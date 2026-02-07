@@ -1,4 +1,4 @@
-# CLAUDE.md
+ # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -24,7 +24,7 @@ Package manager is **pnpm**. No test framework is configured yet.
 - **Database:** MongoDB via Mongoose (connection string: `mongodb://localhost:27017/hackathon`)
 - **Path aliases:** `@/*` maps to the project root
 
-## Project: VeriCampus
+## Project: Unheard
 
 Anonymous campus rumor verification platform. Key concepts:
 

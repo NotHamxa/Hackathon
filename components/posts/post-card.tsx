@@ -5,6 +5,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction }
 import { PostStatusBadge } from "./post-status-badge";
 import { TrustScoreDisplay } from "./trust-score-display";
 import { MessageSquare } from "lucide-react";
+import { ratingLabels, ratingBadgeColors } from "@/lib/rating-config";
+import { cn } from "@/lib/utils";
 
 interface PostCardProps {
   post: {
@@ -16,9 +18,10 @@ interface PostCardProps {
     interactionCount: number;
     createdAt: string;
   };
+  myRating?: number | null;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, myRating }: PostCardProps) {
   return (
     <Link href={`/posts/${post._id}`}>
       <Card className="hover:ring-foreground/20 transition-all cursor-pointer">
@@ -39,6 +42,11 @@ export function PostCard({ post }: PostCardProps) {
               <MessageSquare className="size-3.5" />
               <span>{post.interactionCount}</span>
             </div>
+            {myRating && (
+              <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", ratingBadgeColors[myRating])}>
+                Rated: {ratingLabels[myRating]}
+              </span>
+            )}
             <span className="ml-auto text-xs">
               {new Date(post.createdAt).toLocaleDateString()}
             </span>

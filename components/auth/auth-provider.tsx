@@ -16,7 +16,7 @@ export const AuthContext = createContext<AuthContextValue>({
   logout: () => {},
 });
 
-const STORAGE_KEY = "vericampus_token";
+const STORAGE_KEY = "unheard_token";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(null);

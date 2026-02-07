@@ -5,50 +5,47 @@ import { useApi } from "@/hooks/use-api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-
-const ratingLabels: Record<number, string> = {
-  1: "Completely False",
-  2: "Probably False",
-  3: "Uncertain",
-  4: "Probably True",
-  5: "Completely True",
-};
-
-const ratingColors: Record<number, string> = {
-  1: "hover:bg-red-500/10 hover:text-red-700 data-[selected]:bg-red-500/15 data-[selected]:text-red-700 dark:hover:text-red-400 dark:data-[selected]:text-red-400",
-  2: "hover:bg-orange-500/10 hover:text-orange-700 data-[selected]:bg-orange-500/15 data-[selected]:text-orange-700 dark:hover:text-orange-400 dark:data-[selected]:text-orange-400",
-  3: "hover:bg-yellow-500/10 hover:text-yellow-700 data-[selected]:bg-yellow-500/15 data-[selected]:text-yellow-700 dark:hover:text-yellow-400 dark:data-[selected]:text-yellow-400",
-  4: "hover:bg-lime-500/10 hover:text-lime-700 data-[selected]:bg-lime-500/15 data-[selected]:text-lime-700 dark:hover:text-lime-400 dark:data-[selected]:text-lime-400",
-  5: "hover:bg-green-500/10 hover:text-green-700 data-[selected]:bg-green-500/15 data-[selected]:text-green-700 dark:hover:text-green-400 dark:data-[selected]:text-green-400",
-};
+import { ratingLabels, ratingColors } from "@/lib/rating-config";
 
 interface RatingInputProps {
   postId: string;
+  existingRating?: number | null;
   onRated?: (trustScore: number) => void;
 }
 
-export function RatingInput({ postId, onRated }: RatingInputProps) {
+export function RatingInput({ postId, existingRating, onRated }: RatingInputProps) {
   const { apiFetch } = useApi();
   const [selected, setSelected] = useState<number | null>(null);
+  const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  async function handleRate(rating: number) {
-    setSelected(rating);
+  if (existingRating) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        You rated this post: <strong>{ratingLabels[existingRating]}</strong>
+      </div>
+    );
+  }
+
+  async function handleSubmit() {
+    if (!selected) return;
     setError(null);
     setLoading(true);
 
     try {
+      const body: { rating: number; comment?: string } = { rating: selected };
+      if (comment.trim()) body.comment = comment.trim();
+
       const data = await apiFetch(`/api/posts/${postId}/interact`, {
         method: "POST",
-        body: JSON.stringify({ rating }),
+        body: JSON.stringify(body),
       });
       setSubmitted(true);
       onRated?.(data.trustScore);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit rating");
-      setSelected(null);
     } finally {
       setLoading(false);
     }
@@ -63,7 +60,7 @@ export function RatingInput({ postId, onRated }: RatingInputProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <p className="text-sm font-medium">Rate this rumor</p>
       <div className="flex flex-wrap gap-1.5">
         {[1, 2, 3, 4, 5].map((rating) => (
@@ -74,13 +71,46 @@ export function RatingInput({ postId, onRated }: RatingInputProps) {
             disabled={loading}
             data-selected={selected === rating ? "" : undefined}
             className={cn(ratingColors[rating])}
-            onClick={() => handleRate(rating)}
+            onClick={() => setSelected(rating)}
           >
-            {loading && selected === rating && <Loader2 className="size-3 animate-spin" />}
             {rating} — {ratingLabels[rating]}
           </Button>
         ))}
       </div>
+
+      {selected && (
+        <div className="flex flex-col gap-2">
+          <textarea
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+            placeholder="Add an optional comment (max 500 chars)..."
+            rows={3}
+            maxLength={500}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            disabled={loading}
+          />
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={handleSubmit} disabled={loading}>
+              {loading && <Loader2 className="size-3 animate-spin" />}
+              Submit Rating
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setSelected(null); setComment(""); }}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            {comment.length > 0 && (
+              <span className="text-xs text-muted-foreground ml-auto">
+                {comment.length}/500
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );

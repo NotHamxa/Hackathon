@@ -23,10 +23,16 @@ export async function POST(
       );
     }
 
-    const { rating } = await req.json();
+    const { rating, comment } = await req.json();
 
     if (!rating || typeof rating !== "number" || rating < 1 || rating > 5 || !Number.isInteger(rating)) {
       return NextResponse.json({ error: "Rating must be an integer from 1 to 5" }, { status: 400 });
+    }
+
+    if (comment !== undefined && comment !== null) {
+      if (typeof comment !== "string" || comment.length > 500) {
+        return NextResponse.json({ error: "Comment must be a string of at most 500 characters" }, { status: 400 });
+      }
     }
 
     await dbConnect();
@@ -51,11 +57,13 @@ export async function POST(
     }
 
     // Create interaction
+    const trimmedComment = typeof comment === "string" ? comment.trim() : undefined;
     await Interaction.create({
       interactionHash: hash,
       postId: id,
       userTokenHash: auth.tokenHash,
       rating,
+      ...(trimmedComment ? { comment: trimmedComment } : {}),
       credibilitySnapshot: auth.user.credibility,
     });
 

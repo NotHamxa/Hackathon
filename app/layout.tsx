@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VeriCampus — Anonymous Campus Rumor Verification",
+  title: "Unheard — Anonymous Campus Rumor Verification",
   description:
     "Anonymously share and verify campus rumors. No admins. No identities. Just math and collective judgment.",
 };
